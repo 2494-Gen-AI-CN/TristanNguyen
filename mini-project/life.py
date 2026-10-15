@@ -21,6 +21,9 @@ class Life:
     def population(self):
         return int(self.grid.sum())
 
+    # Shift the whole grid one cell in each of the 8 directions (np.roll wraps
+    # around the edges) and add the shifted copies together: each cell ends up
+    # holding how many live neighbours it has (0-8).
     def neighbours(self):
         g = self.grid
         n = np.zeros_like(g, dtype=np.uint8)
@@ -31,13 +34,16 @@ class Life:
         return n
 
     def step(self):
-        n = self.neighbours()
-        alive = self.grid == 1
+        n = self.neighbours()                       # neighbour count for every cell (0-8)
+        alive = self.grid == 1                      # True where a cell is alive now
+        # Rule 4 (birth) + Rule 2 (survive with 3): exactly 3 neighbours -> alive
+        # Rule 2 (survive with 2): alive now and exactly 2 neighbours -> alive
+        # Rules 1 and 3 (under/overpopulation) are automatic: everything else is dead
         new = (n == 3) | (alive & (n == 2))
-        self.births = int((new & ~alive).sum())
-        self.deaths = int((alive & ~new).sum())
-        self.age = np.where(new, self.age + 1, 0)
-        self.grid = new.astype(np.uint8)
+        self.births = int((new & ~alive).sum())     # ~ is NOT: alive next, dead now
+        self.deaths = int((alive & ~new).sum())     # alive now, not alive next
+        self.age = np.where(new, self.age + 1, 0)   # alive: age + 1, dead: reset to 0
+        self.grid = new.astype(np.uint8)            # True/False -> 1/0
         self.generation += 1
         return self.births, self.deaths
 
